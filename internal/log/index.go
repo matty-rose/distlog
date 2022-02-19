@@ -37,7 +37,6 @@ func newIndex(f *os.File, c Config) (*index, error) {
 		return nil, err
 	}
 	return idx, nil
-
 }
 
 func (i *index) Close() error {
