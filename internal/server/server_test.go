@@ -39,12 +39,17 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 	require.NoError(t, err)
 
 	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CAFile: config.CAFile,
+		CertFile: config.ClientCertFile,
+		KeyFile:  config.ClientKeyFile,
+		CAFile:   config.CAFile,
 	})
 	require.NoError(t, err)
 
 	clientCreds := credentials.NewTLS(clientTLSConfig)
-	cc, err := grpc.Dial(l.Addr().String(), grpc.WithTransportCredentials(clientCreds))
+	cc, err := grpc.Dial(
+		l.Addr().String(),
+		grpc.WithTransportCredentials(clientCreds),
+	)
 	require.NoError(t, err)
 
 	client = api.NewLogClient(cc)
@@ -54,6 +59,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 		KeyFile:       config.ServerKeyFile,
 		CAFile:        config.CAFile,
 		ServerAddress: l.Addr().String(),
+		Server:        true,
 	})
 	require.NoError(t, err)
 
@@ -71,6 +77,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 	if fn != nil {
 		fn(cfg)
 	}
+
 	server, err := NewGRPCServer(cfg, grpc.Creds(serverCreds))
 	require.NoError(t, err)
 
@@ -83,8 +90,6 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 		cc.Close()
 		l.Close()
 	}
-
-	return
 }
 
 func testProduceConsume(t *testing.T, client api.LogClient, config *Config) {
